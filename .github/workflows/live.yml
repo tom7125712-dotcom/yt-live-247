@@ -1,9 +1,14 @@
 name: YouTube 24/7 Live Stream
 
 on:
-  workflow_dispatch: # 允許在網頁後台手動點擊啟動
+  workflow_dispatch:
   schedule:
-    - cron: "0 */5 * * *" # 每 5 小時自動重啟一次，避開 GitHub 6 小時強制中斷的限制
+    - cron: "0 */5 * * *"
+
+# 新增：並行控制規則，確保新任務啟動時自動關閉舊任務，完美交接
+concurrency:
+  group: "yt-live"
+  cancel-in-progress: true
 
 jobs:
   stream:
