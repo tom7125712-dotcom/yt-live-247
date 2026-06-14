@@ -1,11 +1,13 @@
 name: YouTube 24/7 Live Stream
 
 on:
-  workflow_dispatch:
-  schedule:
-    - cron: "0 */5 * * *"
+  workflow_dispatch: # 只保留手動啟動第一棒，徹底刪除會干擾的定時排程 (Cron)
 
-# 新增：並行控制規則，確保新任務啟動時自動關閉舊任務，完美交接
+permissions:
+  actions: write
+  contents: read
+
+# 保留防撞車機制，確保機器人交接時只有一個直播在運作
 concurrency:
   group: "yt-live"
   cancel-in-progress: true
@@ -15,11 +17,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 取得專案檔案
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # 已升級至 v4，消除您截圖中的黃色警告
 
       - name: 安裝 FFmpeg 影音串流工具
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
-      - name: 啟動直播推流至 YouTube
+      - name: 啟動直播推流 (限制執行 5.5 小時後自動交棒)
         run: |
-          ffmpeg -re -loop 1 -framerate 30 -i image.jpg -stream_loop -1 -i music.mp3 -c:v libx264 -preset veryfast -b:v 2500k -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 -f flv "rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
+          timeout 19800 ffmpeg -re -loop 1 -framerate 30 -i image.jpg -stream_loop -1 -i music.mp3 -c:v libx264 -preset veryfast -b:v 2500k -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 -f flv "rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}" || true
+
+      - name: 呼叫下一班機器人無縫接手
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run live.yml
