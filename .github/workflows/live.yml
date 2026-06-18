@@ -1,7 +1,7 @@
 name: YouTube 24/7 Live Stream
 
 on:
-  workflow_dispatch: # 只保留手動啟動第一棒，徹底刪除會干擾的定時排程
+  workflow_dispatch: # 只保留手動啟動第一棒，徹底刪除會干擾的定時排程 (Cron)
 
 permissions:
   actions: write
@@ -17,10 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 取得專案檔案
-        uses: actions/checkout@v4 # 消除黃色警告
+        uses: actions/checkout@v4 # 已升級至 v4，消除您截圖中的黃色警告
 
-      - name: 安裝 FFmpeg 影音串流工具 (靜默安裝，解決 13 分鐘卡死問題)
-        run: sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ffmpeg
+      - name: 安裝 FFmpeg 影音串流工具
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
       - name: 啟動直播推流 (限制執行 5.5 小時後自動交棒)
         run: |
